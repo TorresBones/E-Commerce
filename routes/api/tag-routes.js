@@ -48,43 +48,59 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   // create a new tag
   try {
-    const newTag = Tag.create({
+    const newTag = await Tag.create({
       tag_name: req.body.tag_name,
     });
     res.json(newTag)
   } catch(err) {
-    console.log(err);
-    res.status(500).json(err);
+    console.error(err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   // update a tag's name by its `id` value
   try {
-    const newTag = Tag.update({
+    const existingTag = await Tag.findByPk(req.params.id);
+    if (!existingTag) {
+      return res.status(404).json({ success: false, message: 'Tag not found' });
+    }
+
+    const [rowsAffected] = await Tag.update(
+      {
       tag_name: req.body.tag_name,
     },
     {
       where: {
         id: req.params.id,
       },
-    });
-    res.json(newTag)
+    }
+  );
+    if (rowsAffected === 1) {
+      res.json({ success: true, message: 'Tag updated successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Tag not found or not updated' });
+    }   
   } catch(err) {
     console.log(err);
-    res.status(500).json(err);
+    res.status(500).json({ error: 'Internal Server Error '});
   }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete on tag by its `id` value
   try {
-    const newTag = Tag.destroy({
+    const rowsAffected = await Tag.destroy({
       where: {
         id: req.params.id,
       },
     });
-    res.json(newTag)
+
+    if (rowsAffected === 1) {
+    res.json({ success: true, message: 'Tag deleted successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Tag not found or not deleted' });
+    }
   } catch(err){
     console.log(err);
     res.status(500).json(err)
